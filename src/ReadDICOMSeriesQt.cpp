@@ -22,6 +22,7 @@ void ReadDICOMSeriesQt::openDICOMFolder() {
 void ReadDICOMSeriesQt::drawDICOMSeries(std::string folderDICOM) {
     reader->SetDirectoryName(folderDICOM.c_str());
     reader->Update();
+	currentPosition = 0;
 
     viewer->SetInputConnection(reader->GetOutputPort());
 
@@ -33,7 +34,7 @@ void ReadDICOMSeriesQt::drawDICOMSeries(std::string folderDICOM) {
 
     viewer->Render();
 
-	filter(0);
+	filter();
 
     minSlice = viewer->GetSliceMin();
     maxSlice = viewer->GetSliceMax();
@@ -49,12 +50,42 @@ void ReadDICOMSeriesQt::on_buttonOpenFolder_clicked() {
 }
 
 void ReadDICOMSeriesQt::on_sliderSlices_sliderMoved(int position) {
+	currentPosition = position;
     viewer->SetSlice(position);
     viewer->Render();
-	filter(position);
+	filter();
 }
 
-void ReadDICOMSeriesQt::filter(int pos) {
+void ReadDICOMSeriesQt::on_doubleSpinBoxVariance_valueChanged(double value) {
+	filter();
+}
+
+void ReadDICOMSeriesQt::on_doubleSpinBoxHigherThreshold_valueChanged(double value) {
+	filter();
+}
+
+void ReadDICOMSeriesQt::on_doubleSpinBoxLowerThreshold_valueChanged(double value) {
+	filter();
+}
+
+void ReadDICOMSeriesQt::filter() {
+	typedef signed short CharPixelType;
+	typedef float RealPixelType;
+
+	typedef itk::Image<CharPixelType, 3> CharImageType;
+	typedef itk::Image<RealPixelType, 3> RealImageType;
+	typedef itk::Image<CharPixelType, 2> Char2ImageType;
+	typedef itk::Image<RealPixelType, 2> Real2ImageType;
+
+	typedef itk::ExtractImageFilter<CharImageType, Char2ImageType> Extract2DImageFilter;
+	typedef itk::CastImageFilter<Char2ImageType, Real2ImageType> CastToRealFilterType;
+	typedef itk::CannyEdgeDetectionImageFilter<Real2ImageType, Real2ImageType> CannyFilterType;
+	typedef itk::RescaleIntensityImageFilter<Real2ImageType, Char2ImageType> RescaleFilterType;
+	typedef itk::ThresholdImageFilter<Real2ImageType> ThresholdFilterType;
+
+	typedef itk::ImageToVTKImageFilter<Char2ImageType> ImageToVTKImageType;
+	typedef itk::VTKImageToImageFilter<CharImageType> VTKImageToImageType;
+
 	VTKImageToImageType::Pointer connectorInput = VTKImageToImageType::New();
 
 	connectorInput->SetInput(reader->GetOutput());
@@ -64,6 +95,7 @@ void ReadDICOMSeriesQt::filter(int pos) {
 	CastToRealFilterType::Pointer toReal = CastToRealFilterType::New();
 	CannyFilterType::Pointer filter = CannyFilterType::New();
 	RescaleFilterType::Pointer rescale = RescaleFilterType::New();
+	ThresholdFilterType::Pointer threshold = ThresholdFilterType::New();
 
 	to2D->SetInput(connectorInput->GetOutput());
 	to2D->InPlaceOn();
@@ -74,7 +106,7 @@ void ReadDICOMSeriesQt::filter(int pos) {
 	size[2] = 0;
 
 	CharImageType::IndexType start = inputRegion.GetIndex();
-	start[2] = pos;
+	start[2] = currentPosition;
 
 	CharImageType::RegionType desiredRegion;
 	desiredRegion.SetSize(size);
@@ -84,7 +116,13 @@ void ReadDICOMSeriesQt::filter(int pos) {
 	to2D->Update();
 
 	toReal->SetInput(to2D->GetOutput());
-	filter->SetInput(toReal->GetOutput());
+
+	threshold->SetInput(toReal->GetOutput());
+	threshold->SetOutsideValue(-1000);
+	threshold->ThresholdOutside(-800, -300);
+	threshold->Update();
+
+	filter->SetInput(threshold->GetOutput());
 
 	filter->SetVariance(ui->doubleSpinBoxVariance->value());
 	filter->SetUpperThreshold(ui->doubleSpinBoxHigherThreshold->value());
@@ -98,7 +136,5 @@ void ReadDICOMSeriesQt::filter(int pos) {
 
 	viewerFilter->SetInputData(connectorOutput->GetOutput());
 
-	viewerFilter->Render();
-	viewerFilter->GetRenderer()->ResetCamera();
 	viewerFilter->Render();
 }

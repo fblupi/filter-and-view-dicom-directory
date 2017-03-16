@@ -17,6 +17,7 @@
 #include <itkCannyEdgeDetectionImageFilter.h>
 #include <itkRescaleIntensityImageFilter.h>
 #include <itkExtractImageFilter.h>
+#include <itkThresholdImageFilter.h>
 
 namespace Ui {
     class ReadDICOMSeriesQt;
@@ -34,6 +35,9 @@ private slots:
     void drawDICOMSeries(std::string folderDICOM);
     void on_buttonOpenFolder_clicked();
     void on_sliderSlices_sliderMoved(int posicion);
+	void on_doubleSpinBoxVariance_valueChanged(double value);
+	void on_doubleSpinBoxHigherThreshold_valueChanged(double value);
+	void on_doubleSpinBoxLowerThreshold_valueChanged(double value);
 
 private:
     Ui::ReadDICOMSeriesQt *ui;
@@ -43,24 +47,9 @@ private:
 	vtkSmartPointer<vtkImageData> data = NULL;
     int minSlice;
     int maxSlice;
+	int currentPosition;
 
-	typedef signed short CharPixelType;
-	typedef float RealPixelType;
-
-	typedef itk::Image<CharPixelType, 3> CharImageType;
-	typedef itk::Image<RealPixelType, 3> RealImageType;
-	typedef itk::Image<CharPixelType, 2> Char2ImageType;
-	typedef itk::Image<RealPixelType, 2> Real2ImageType;
-
-	typedef itk::ExtractImageFilter<CharImageType, Char2ImageType> Extract2DImageFilter;
-	typedef itk::CastImageFilter<Char2ImageType, Real2ImageType> CastToRealFilterType;
-	typedef itk::CannyEdgeDetectionImageFilter<Real2ImageType, Real2ImageType> CannyFilterType;
-	typedef itk::RescaleIntensityImageFilter<Real2ImageType, Char2ImageType> RescaleFilterType;
-
-	typedef itk::ImageToVTKImageFilter<Char2ImageType> ImageToVTKImageType;
-	typedef itk::VTKImageToImageFilter<CharImageType> VTKImageToImageType;
-
-	void filter(int pos);
+	void filter();
 };
 
 #endif // ReadDICOMSeriesQt_H
