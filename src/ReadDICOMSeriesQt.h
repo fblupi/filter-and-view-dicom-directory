@@ -9,16 +9,6 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 
-#include <itkImage.h>
-#include <itkImageFileReader.h>
-#include <itkImageToVTKImageFilter.h>
-#include <itkVTKImageToImageFilter.h>
-#include <itkCastImageFilter.h>
-#include <itkCannyEdgeDetectionImageFilter.h>
-#include <itkRescaleIntensityImageFilter.h>
-#include <itkExtractImageFilter.h>
-#include <itkThresholdImageFilter.h>
-
 namespace Ui {
     class ReadDICOMSeriesQt;
 }

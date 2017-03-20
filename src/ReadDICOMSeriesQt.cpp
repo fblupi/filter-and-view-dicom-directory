@@ -3,6 +3,17 @@
 
 #include <QFileDialog>
 
+#include <itkImage.h>
+#include <itkImageFileReader.h>
+#include <itkImageToVTKImageFilter.h>
+#include <itkVTKImageToImageFilter.h>
+#include <itkCastImageFilter.h>
+#include <itkCannyEdgeDetectionImageFilter.h>
+#include <itkRescaleIntensityImageFilter.h>
+#include <itkExtractImageFilter.h>
+#include <itkThresholdImageFilter.h>
+#include <itkHoughTransform2DLinesImageFilter.h>
+
 ReadDICOMSeriesQt::ReadDICOMSeriesQt(QWidget *parent) : QMainWindow(parent), ui(new Ui::ReadDICOMSeriesQt) {
     ui->setupUi(this);
     reader = vtkSmartPointer<vtkDICOMImageReader>::New();
@@ -69,72 +80,132 @@ void ReadDICOMSeriesQt::on_doubleSpinBoxLowerThreshold_valueChanged(double value
 }
 
 void ReadDICOMSeriesQt::filter() {
-	typedef signed short CharPixelType;
-	typedef float RealPixelType;
+	typedef signed short InputPixelType;
+	typedef float PixelType;
 
-	typedef itk::Image<CharPixelType, 3> CharImageType;
-	typedef itk::Image<RealPixelType, 3> RealImageType;
-	typedef itk::Image<CharPixelType, 2> Char2ImageType;
-	typedef itk::Image<RealPixelType, 2> Real2ImageType;
+	typedef itk::Image<InputPixelType, 3> InputImageType3D;
+	typedef itk::Image<PixelType, 3> ImageType3D;
+	typedef itk::Image<InputPixelType, 2> InputImageType;
+	typedef itk::Image<PixelType, 2> ImageType;
 
-	typedef itk::ExtractImageFilter<CharImageType, Char2ImageType> Extract2DImageFilter;
-	typedef itk::CastImageFilter<Char2ImageType, Real2ImageType> CastToRealFilterType;
-	typedef itk::CannyEdgeDetectionImageFilter<Real2ImageType, Real2ImageType> CannyFilterType;
-	typedef itk::RescaleIntensityImageFilter<Real2ImageType, Char2ImageType> RescaleFilterType;
-	typedef itk::ThresholdImageFilter<Real2ImageType> ThresholdFilterType;
-
-	typedef itk::ImageToVTKImageFilter<Char2ImageType> ImageToVTKImageType;
-	typedef itk::VTKImageToImageFilter<CharImageType> VTKImageToImageType;
+	typedef itk::VTKImageToImageFilter<InputImageType3D> VTKImageToImageType;
+	typedef itk::ExtractImageFilter<InputImageType3D, InputImageType> Extract2DImageFilter;
+	typedef itk::CastImageFilter<InputImageType, ImageType> CastToRealFilterType;
+	typedef itk::ThresholdImageFilter<ImageType> ThresholdFilterType;
+	typedef itk::CannyEdgeDetectionImageFilter<ImageType, ImageType> CannyFilterType;
+	typedef itk::HoughTransform2DLinesImageFilter<PixelType, PixelType> HoughTransformFilterType;
+	typedef itk::RescaleIntensityImageFilter<ImageType, InputImageType> RescaleFilterType;
+	typedef itk::ImageToVTKImageFilter<InputImageType> ImageToVTKImageType;
 
 	VTKImageToImageType::Pointer connectorInput = VTKImageToImageType::New();
+	Extract2DImageFilter::Pointer to2D = Extract2DImageFilter::New();
+	CastToRealFilterType::Pointer toReal = CastToRealFilterType::New();
+	ThresholdFilterType::Pointer threshold = ThresholdFilterType::New();
+	CannyFilterType::Pointer canny = CannyFilterType::New();
+	HoughTransformFilterType::Pointer hough = HoughTransformFilterType::New();
+	RescaleFilterType::Pointer rescale = RescaleFilterType::New();
+	ImageToVTKImageType::Pointer connectorOutput = ImageToVTKImageType::New();
+	ImageToVTKImageType::Pointer connectorOutputLines = ImageToVTKImageType::New();
 
+	// VTK to ITK
 	connectorInput->SetInput(reader->GetOutput());
 	connectorInput->Update();
 
-	Extract2DImageFilter::Pointer to2D = Extract2DImageFilter::New();
-	CastToRealFilterType::Pointer toReal = CastToRealFilterType::New();
-	CannyFilterType::Pointer filter = CannyFilterType::New();
-	RescaleFilterType::Pointer rescale = RescaleFilterType::New();
-	ThresholdFilterType::Pointer threshold = ThresholdFilterType::New();
-
+	// 3D to 2D
 	to2D->SetInput(connectorInput->GetOutput());
 	to2D->InPlaceOn();
 	to2D->SetDirectionCollapseToSubmatrix();
 	
-	CharImageType::RegionType inputRegion = connectorInput->GetOutput()->GetLargestPossibleRegion();
-	CharImageType::SizeType size = inputRegion.GetSize();
+	InputImageType3D::RegionType inputRegion = connectorInput->GetOutput()->GetLargestPossibleRegion();
+	InputImageType3D::SizeType size = inputRegion.GetSize();
 	size[2] = 0;
 
-	CharImageType::IndexType start = inputRegion.GetIndex();
+	InputImageType3D::IndexType start = inputRegion.GetIndex();
 	start[2] = currentPosition;
 
-	CharImageType::RegionType desiredRegion;
+	InputImageType3D::RegionType desiredRegion;
 	desiredRegion.SetSize(size);
 	desiredRegion.SetIndex(start);
 
 	to2D->SetExtractionRegion(desiredRegion);
 	to2D->Update();
 
+	// Cast to float
 	toReal->SetInput(to2D->GetOutput());
 
+	// Filtering only wood density values
 	threshold->SetInput(toReal->GetOutput());
 	threshold->SetOutsideValue(-1000);
 	threshold->ThresholdOutside(-800, -300);
 	threshold->Update();
 
-	filter->SetInput(threshold->GetOutput());
+	// Edge detection
+	canny->SetInput(threshold->GetOutput());
+	canny->SetVariance(ui->doubleSpinBoxVariance->value());
+	canny->SetUpperThreshold(ui->doubleSpinBoxHigherThreshold->value());
+	canny->SetLowerThreshold(ui->doubleSpinBoxLowerThreshold->value());
+	canny->Update();
 
-	filter->SetVariance(ui->doubleSpinBoxVariance->value());
-	filter->SetUpperThreshold(ui->doubleSpinBoxHigherThreshold->value());
-	filter->SetLowerThreshold(ui->doubleSpinBoxLowerThreshold->value());
-	filter->Update();
-	rescale->SetInput(filter->GetOutput());
+	// Lines detection
+	hough->SetInput(canny->GetOutput());
+	hough->SetNumberOfLines(100);
+	hough->Update();
 
-	ImageToVTKImageType::Pointer connectorOutput = ImageToVTKImageType::New();
+	ImageType::Pointer localAccumulator = hough->GetOutput();
+	HoughTransformFilterType::LinesListType lines;
+	lines = hough->GetLines(100);
+
+	InputImageType::Pointer localOutputImage = InputImageType::New();
+	InputImageType::RegionType region(to2D->GetOutput()->GetLargestPossibleRegion());
+	localOutputImage->SetRegions(region);
+	localOutputImage->CopyInformation(to2D->GetOutput());
+	localOutputImage->Allocate(true);
+
+	typedef HoughTransformFilterType::LinesListType::const_iterator LineIterator;
+	LineIterator itLines = lines.begin();
+	while (itLines != lines.end()) {
+		typedef HoughTransformFilterType::LineType::PointListType  PointListType;
+		PointListType pointsList = (*itLines)->GetPoints();
+		PointListType::const_iterator itPoints = pointsList.begin();
+		double u[2];
+		u[0] = (*itPoints).GetPosition()[0];
+		u[1] = (*itPoints).GetPosition()[1];
+		itPoints++;
+		double v[2];
+		v[0] = u[0] - (*itPoints).GetPosition()[0];
+		v[1] = u[1] - (*itPoints).GetPosition()[1];
+		double norm = std::sqrt(v[0] * v[0] + v[1] * v[1]);
+		v[0] /= norm;
+		v[1] /= norm;
+
+		ImageType::IndexType localIndex;
+		itk::Size<2> size = localOutputImage->GetLargestPossibleRegion().GetSize();
+		float diag = std::sqrt((float)(size[0] * size[0] + size[1] * size[1]));
+		for (int i = static_cast<int>(-diag); i < static_cast<int>(diag); i++) {
+			localIndex[0] = (long int)(u[0] + i*v[0]);
+			localIndex[1] = (long int)(u[1] + i*v[1]);
+			InputImageType::RegionType outputRegion = localOutputImage->GetLargestPossibleRegion();
+			if (outputRegion.IsInside(localIndex)) {
+				localOutputImage->SetPixel(localIndex, 255);
+			}
+		}
+		itLines++;
+	}
+
+	// Cast to short
+	rescale->SetInput(canny->GetOutput());
+
+	// ITK to VTK
 	connectorOutput->SetInput(rescale->GetOutput());
 	connectorOutput->Update();
 
-	viewerFilter->SetInputData(connectorOutput->GetOutput());
+	connectorOutputLines->SetInput(localOutputImage);
+	connectorOutputLines->Update();
 
+	// View
+	viewerFilter->SetInputData(connectorOutput->GetOutput());
 	viewerFilter->Render();
+
+	viewer->SetInputData(connectorOutputLines->GetOutput());
+	viewer->Render();
 }
