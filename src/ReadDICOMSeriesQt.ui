@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1003</width>
+    <width>1029</width>
     <height>625</height>
    </rect>
   </property>
@@ -27,7 +27,55 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="2" column="0">
+    <item row="0" column="0" colspan="3">
+     <widget class="QVTKWidget" name="qvtkWidget" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>500</width>
+        <height>500</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3" colspan="3">
+     <widget class="QVTKWidget" name="qvtkWidgetFilter" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>500</width>
+        <height>500</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QPushButton" name="buttonOpenFolder">
+      <property name="text">
+       <string>Open Folder</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QPushButton" name="buttonPreviousSlice">
+      <property name="text">
+       <string>&lt;</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="2" colspan="3">
+     <widget class="QSlider" name="sliderSlices">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="5">
+     <widget class="QPushButton" name="buttonNextSlice">
+      <property name="text">
+       <string>&gt;</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="3">
      <widget class="QLabel" name="labelVariance">
       <property name="text">
        <string>Variance</string>
@@ -37,61 +85,10 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="3">
-     <widget class="QDoubleSpinBox" name="doubleSpinBoxHigherThreshold">
-      <property name="value">
-       <double>10.000000000000000</double>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="5">
-     <widget class="QDoubleSpinBox" name="doubleSpinBoxLowerThreshold"/>
-    </item>
-    <item row="1" column="2" colspan="4">
-     <widget class="QSlider" name="sliderSlices">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0" colspan="2">
-     <widget class="QPushButton" name="buttonOpenFolder">
-      <property name="text">
-       <string>Open Folder</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="2">
-     <widget class="QLabel" name="labelHigherThreshold">
-      <property name="text">
-       <string>Higher Threshold</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </item>
     <item row="2" column="4">
-     <widget class="QLabel" name="labelLowerThreshold">
-      <property name="text">
-       <string>Lower Threshold</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="1">
      <widget class="QDoubleSpinBox" name="doubleSpinBoxVariance">
       <property name="value">
        <double>1.000000000000000</double>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
-     <widget class="QLabel" name="labelSlicesNumberTitle">
-      <property name="text">
-       <string>Slices:</string>
       </property>
      </widget>
     </item>
@@ -102,37 +99,40 @@
       </property>
      </widget>
     </item>
-    <item row="4" column="1" colspan="5">
-     <widget class="QLabel" name="labelSlicesNumber">
+    <item row="3" column="3">
+     <widget class="QLabel" name="labelHigherThreshold">
       <property name="text">
-       <string>-</string>
+       <string>Higher Threshold</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
      </widget>
     </item>
-    <item row="3" column="1" colspan="5">
+    <item row="3" column="4">
+     <widget class="QDoubleSpinBox" name="doubleSpinBoxHigherThreshold">
+      <property name="value">
+       <double>10.000000000000000</double>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="3">
+     <widget class="QLabel" name="labelLowerThreshold">
+      <property name="text">
+       <string>Lower Threshold</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="4">
+     <widget class="QDoubleSpinBox" name="doubleSpinBoxLowerThreshold"/>
+    </item>
+    <item row="3" column="1" colspan="2">
      <widget class="QLabel" name="labelFolderName">
       <property name="text">
        <string>-</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0" colspan="3">
-     <widget class="QVTKWidget" name="qvtkWidget" native="true">
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>500</height>
-       </size>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="3" colspan="3">
-     <widget class="QVTKWidget" name="qvtkWidgetFilter" native="true">
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>500</height>
-       </size>
       </property>
      </widget>
     </item>

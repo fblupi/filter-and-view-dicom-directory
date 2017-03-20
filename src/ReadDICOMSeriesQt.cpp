@@ -45,14 +45,13 @@ void ReadDICOMSeriesQt::drawDICOMSeries(std::string folderDICOM) {
 
     viewer->Render();
 
-	filter();
+	minSlice = viewer->GetSliceMin();
+	maxSlice = viewer->GetSliceMax();
 
-    minSlice = viewer->GetSliceMin();
-    maxSlice = viewer->GetSliceMax();
+	filter();
 
     ui->sliderSlices->setMinimum(minSlice);
     ui->sliderSlices->setMaximum(maxSlice);
-    ui->labelSlicesNumber->setText(QString::number(maxSlice - minSlice));
     ui->labelFolderName->setText(QString::fromStdString(folderDICOM));
 }
 
@@ -64,6 +63,22 @@ void ReadDICOMSeriesQt::on_sliderSlices_sliderMoved(int position) {
 	currentPosition = position;
     viewer->SetSlice(position);
     viewer->Render();
+	filter();
+}
+
+void ReadDICOMSeriesQt::on_buttonNextSlice_clicked() {
+	currentPosition++;
+	ui->sliderSlices->setSliderPosition(currentPosition);
+	viewer->SetSlice(currentPosition);
+	viewer->Render();
+	filter();
+}
+
+void ReadDICOMSeriesQt::on_buttonPreviousSlice_clicked() {
+	currentPosition++;
+	ui->sliderSlices->setSliderPosition(currentPosition);
+	viewer->SetSlice(currentPosition);
+	viewer->Render();
 	filter();
 }
 
@@ -80,13 +95,17 @@ void ReadDICOMSeriesQt::on_doubleSpinBoxLowerThreshold_valueChanged(double value
 }
 
 void ReadDICOMSeriesQt::filter() {
+	const unsigned int nLines = 1;
+
+	const unsigned int InputDimension = 3;
+	const unsigned int Dimension = 2;
 	typedef signed short InputPixelType;
 	typedef float PixelType;
 
-	typedef itk::Image<InputPixelType, 3> InputImageType3D;
-	typedef itk::Image<PixelType, 3> ImageType3D;
-	typedef itk::Image<InputPixelType, 2> InputImageType;
-	typedef itk::Image<PixelType, 2> ImageType;
+	typedef itk::Image<InputPixelType, InputDimension> InputImageType3D;
+	typedef itk::Image<PixelType, InputDimension> ImageType3D;
+	typedef itk::Image<InputPixelType, Dimension> InputImageType;
+	typedef itk::Image<PixelType, Dimension> ImageType;
 
 	typedef itk::VTKImageToImageFilter<InputImageType3D> VTKImageToImageType;
 	typedef itk::ExtractImageFilter<InputImageType3D, InputImageType> Extract2DImageFilter;
@@ -148,12 +167,12 @@ void ReadDICOMSeriesQt::filter() {
 
 	// Lines detection
 	hough->SetInput(canny->GetOutput());
-	hough->SetNumberOfLines(100);
+	hough->SetNumberOfLines(nLines);
 	hough->Update();
 
 	ImageType::Pointer localAccumulator = hough->GetOutput();
 	HoughTransformFilterType::LinesListType lines;
-	lines = hough->GetLines(100);
+	lines = hough->GetLines(nLines);
 
 	InputImageType::Pointer localOutputImage = InputImageType::New();
 	InputImageType::RegionType region(to2D->GetOutput()->GetLargestPossibleRegion());

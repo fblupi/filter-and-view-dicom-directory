@@ -24,6 +24,8 @@ private slots:
     void openDICOMFolder();
     void drawDICOMSeries(std::string folderDICOM);
     void on_buttonOpenFolder_clicked();
+	void on_buttonNextSlice_clicked();
+	void on_buttonPreviousSlice_clicked();
     void on_sliderSlices_sliderMoved(int posicion);
 	void on_doubleSpinBoxVariance_valueChanged(double value);
 	void on_doubleSpinBoxHigherThreshold_valueChanged(double value);
