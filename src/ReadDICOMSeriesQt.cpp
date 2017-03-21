@@ -94,8 +94,30 @@ void ReadDICOMSeriesQt::on_doubleSpinBoxLowerThreshold_valueChanged(double value
 	filter();
 }
 
+void ReadDICOMSeriesQt::on_doubleSpinBoxLines_valueChanged(double value) {
+	filter();
+}
+
+void ReadDICOMSeriesQt::on_doubleSpinBoxVarianceHough_valueChanged(double value) {
+	filter();
+}
+
+void ReadDICOMSeriesQt::on_doubleSpinBoxDiscRadius_valueChanged(double value) {
+	filter();
+}
+
+void ReadDICOMSeriesQt::on_doubleSpinBoxAngleResolution_valueChanged(double value) {
+	filter();
+}
+
+void ReadDICOMSeriesQt::on_doubleSpinBoxThreshold_valueChanged(double value) {
+	filter();
+}
+
 void ReadDICOMSeriesQt::filter() {
-	const unsigned int nLines = 1;
+	const unsigned int houghLines = 1;
+	const unsigned int houghVariance = 2;
+	const unsigned int houghDiscRadius = 3;
 
 	const unsigned int InputDimension = 3;
 	const unsigned int Dimension = 2;
@@ -167,12 +189,16 @@ void ReadDICOMSeriesQt::filter() {
 
 	// Lines detection
 	hough->SetInput(canny->GetOutput());
-	hough->SetNumberOfLines(nLines);
+	hough->SetThreshold(ui->doubleSpinBoxThreshold->value());
+	hough->SetAngleResolution(ui->doubleSpinBoxAngleResolution->value());
+	hough->SetNumberOfLines(ui->doubleSpinBoxLines->value());
+	hough->SetVariance(ui->doubleSpinBoxVarianceHough->value());
+	hough->SetDiscRadius(ui->doubleSpinBoxDiscRadius->value());
 	hough->Update();
 
 	ImageType::Pointer localAccumulator = hough->GetOutput();
 	HoughTransformFilterType::LinesListType lines;
-	lines = hough->GetLines(nLines);
+	lines = hough->GetLines(ui->doubleSpinBoxLines->value());
 
 	InputImageType::Pointer localOutputImage = InputImageType::New();
 	InputImageType::RegionType region(to2D->GetOutput()->GetLargestPossibleRegion());

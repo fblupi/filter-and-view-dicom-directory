@@ -30,6 +30,11 @@ private slots:
 	void on_doubleSpinBoxVariance_valueChanged(double value);
 	void on_doubleSpinBoxHigherThreshold_valueChanged(double value);
 	void on_doubleSpinBoxLowerThreshold_valueChanged(double value);
+	void on_doubleSpinBoxLines_valueChanged(double value);
+	void on_doubleSpinBoxVarianceHough_valueChanged(double value);
+	void on_doubleSpinBoxDiscRadius_valueChanged(double value);
+	void on_doubleSpinBoxAngleResolution_valueChanged(double value);
+	void on_doubleSpinBoxThreshold_valueChanged(double value);
 
 private:
     Ui::ReadDICOMSeriesQt *ui;
